@@ -9,7 +9,9 @@ SYSTEM:
 `;
 
 export const analyzePatientData = async (data: PatientInput): Promise<DiagnosticResponse> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Using the specific API key as requested
+  const apiKey = "AIzaSyDSWXsMSqzh-aSsrcx-PAhQbPbx964Vmms";
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
   ${SYSTEM_PROMPT}
