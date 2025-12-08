@@ -1,0 +1,5 @@
+{
+  "name": "Clinical Decision Map",
+  "description": "AI-powered clinical decision support system that visualizes diagnostic probabilities, recommends tests, and highlights red flags based on patient data.",
+  "requestFramePermissions": []
+}
