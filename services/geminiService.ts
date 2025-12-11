@@ -1,35 +1,38 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { PatientInput, DiagnosticResponse, Language } from "../types";
 
 const SYSTEM_PROMPT = `
 SYSTEM:
-You are an elite AI Medical Consultant (Clinical Decision Support). Your goal is deep clinical synthesis.
-Input data includes unstructured lab text—you must interpret it correctly.
+You are an Expert Clinical Diagnostic Board (Senior MD level). Your goal is to provide a comprehensive, deep, and highly detailed clinical analysis.
 
-Your task is to generate a DIAGNOSTIC MAP. For each diagnosis, you must explain not just "why it fits", but the "MECHANISM" (pathophysiology: how exactly the symptoms and labs lead to this condition).
+RULES FOR GENERATION:
+1. **Breadth of Analysis**: You MUST generate at least 4-5 distinct Differential Diagnoses. Do not stop at the most obvious one. Consider rare but critical conditions.
+2. **Depth of Mechanism**: In the 'mechanism' field, do not just repeat the disease name. Explain the *pathophysiology* specifically for this patient. (e.g., "Systemic vasodilation caused by sepsis leads to hypotension, while compensatory tachycardia attempts to maintain cardiac output...").
+3. **Evidence-Based**: For every diagnosis, list specific lab values or symptoms from the input that support it.
+4. **Clinical Logic**: Use the "Why" field to explain the reasoning like a professor teaching students.
 
-Analysis Structure:
-1. **Differential**: List of hypotheses. 'mechanism' field must explain causality.
-2. **Recommended Tests**: Only what will actually change tactics.
-3. **Red Flags**: Critical conditions.
-4. **Summary**: A concise summary for the doctor.
+OUTPUT STRUCTURE:
+- **Summary**: A professional clinical synthesis (2-3 sentences).
+- **Differential**: Sorted by probability. MUST include 4+ items.
+- **Red Flags**: Immediate threats to life.
 
+Handle unstructured text intelligently. If the user pastes raw lab text, extract every relevant parameter.
 Format strictly JSON.
 `;
 
 export const analyzePatientData = async (data: PatientInput, language: Language): Promise<DiagnosticResponse> => {
-  const apiKey = "AIzaSyDSWXsMSqzh-aSsrcx-PAhQbPbx964Vmms";
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
   ${SYSTEM_PROMPT}
 
   USER:
-  Analyze this patient. Lab data is passed as text—extract meaning from it.
+  Analyze this patient case.
   
   LANGUAGE REQUIREMENT:
   Output the entire response in ${language === 'ru' ? 'RUSSIAN' : 'ENGLISH'}.
-  Translate all clinical terms, summaries, and explanations to ${language === 'ru' ? 'Russian' : 'English'}.
+  - Diagnosis names must be standard medical terminology.
+  - Explanations must be academic yet clear.
   
   INPUT DATA:
   ${JSON.stringify(data, null, 2)}
@@ -42,44 +45,57 @@ export const analyzePatientData = async (data: PatientInput, language: Language)
       config: {
         responseMimeType: "application/json",
         responseSchema: {
-          type: "OBJECT" as any,
+          type: Type.OBJECT,
           properties: {
-            patient_id: { type: "STRING" as any },
-            timestamp: { type: "STRING" as any },
-            summary: { type: "STRING" as any },
+            patient_id: { type: Type.STRING },
+            timestamp: { type: Type.STRING },
+            summary: { type: Type.STRING },
             differential: {
-              type: "ARRAY" as any,
+              type: Type.ARRAY,
               items: {
-                type: "OBJECT" as any,
+                type: Type.OBJECT,
                 properties: {
-                  diagnosis: { type: "STRING" as any },
-                  probability: { type: "NUMBER" as any },
-                  confidence: { type: "STRING" as any, enum: ["low", "medium", "high"] },
-                  evidence: { type: "ARRAY" as any, items: { type: "STRING" as any } },
-                  mechanism: { type: "STRING" as any, description: "Pathophysiological explanation of why this is happening" },
-                  why: { type: "STRING" as any }
-                }
+                  diagnosis: { type: Type.STRING },
+                  probability: { type: Type.NUMBER, description: "Float between 0 and 1" },
+                  confidence: { type: Type.STRING, enum: ["low", "medium", "high"] },
+                  evidence: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  mechanism: { type: Type.STRING, description: "Detailed pathophysiological step-by-step chain" },
+                  why: { type: Type.STRING, description: "Clinical reasoning: why this fits and others dont" }
+                },
+                required: ["diagnosis", "probability", "confidence", "evidence", "mechanism", "why"]
               }
             },
             recommended_tests: {
-              type: "ARRAY" as any,
+              type: Type.ARRAY,
               items: {
-                type: "OBJECT" as any,
+                type: Type.OBJECT,
                 properties: {
-                  test: { type: "STRING" as any },
-                  priority: { type: "STRING" as any, enum: ["high", "medium", "low"] },
-                  rationale: { type: "STRING" as any }
-                }
+                  test: { type: Type.STRING },
+                  priority: { type: Type.STRING, enum: ["high", "medium", "low"] },
+                  rationale: { type: Type.STRING }
+                },
+                required: ["test", "priority", "rationale"]
               }
             },
-            immediate_actions: { type: "ARRAY" as any, items: { type: "STRING" as any } },
-            clarifying_questions: { type: "ARRAY" as any, items: { type: "STRING" as any } },
-            red_flags: { type: "ARRAY" as any, items: { type: "STRING" as any } },
-            explanatory_note: { type: "STRING" as any },
-            references: { type: "ARRAY" as any, items: { type: "STRING" as any } },
-            overall_confidence: { type: "STRING" as any, enum: ["low", "medium", "high"] }
+            immediate_actions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            clarifying_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            red_flags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            explanatory_note: { type: Type.STRING },
+            references: { type: Type.ARRAY, items: { type: Type.STRING } },
+            overall_confidence: { type: Type.STRING, enum: ["low", "medium", "high"] }
           },
-          required: ["patient_id", "differential", "recommended_tests", "red_flags", "overall_confidence", "summary"]
+          required: [
+            "patient_id", 
+            "differential", 
+            "recommended_tests", 
+            "immediate_actions",
+            "clarifying_questions",
+            "red_flags", 
+            "references",
+            "overall_confidence", 
+            "summary",
+            "explanatory_note"
+          ]
         }
       }
     });

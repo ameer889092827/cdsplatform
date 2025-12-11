@@ -1,6 +1,6 @@
 import React from 'react';
 import { DiagnosticResponse } from '../types';
-import { AlertTriangle, CheckCircle, HelpCircle, Activity, ArrowRight, ShieldAlert, BookOpen, TestTube, BrainCircuit, Lightbulb } from 'lucide-react';
+import { AlertTriangle, CheckCircle, HelpCircle, Activity, ArrowRight, ShieldAlert, BookOpen, TestTube, BrainCircuit, Lightbulb, GitMerge } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface DiagnosticMapProps {
@@ -10,10 +10,10 @@ interface DiagnosticMapProps {
 }
 
 export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset, t }) => {
-  const chartData = data.differential.map(d => ({
-    name: d.diagnosis.length > 20 ? d.diagnosis.substring(0, 20) + '...' : d.diagnosis,
+  const chartData = (data.differential || []).map(d => ({
+    name: d.diagnosis?.length > 15 ? d.diagnosis.substring(0, 15) + '...' : d.diagnosis || 'Unknown',
     full: d.diagnosis,
-    prob: Math.round(d.probability * 100),
+    prob: Math.round((d.probability || 0) * 100),
     confidence: d.confidence
   }));
 
@@ -56,7 +56,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset, t }
             </div>
             
             {/* Red Flags Alert Badge */}
-            {data.red_flags.length > 0 && (
+            {data.red_flags && data.red_flags.length > 0 && (
                 <div className="flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-xl border border-red-100 animate-pulse">
                     <ShieldAlert className="w-5 h-5" />
                     <span className="font-bold text-sm">{t.flagDetected} ({data.red_flags.length})</span>
@@ -78,9 +78,53 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset, t }
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
         {/* 2. Main Differential Diagnosis Column (Left - Wider) */}
-        <div className="xl:col-span-2 space-y-8">
+        <div className="xl:col-span-2 space-y-8 min-w-0">
             
-            {/* Differential Cards */}
+            {/* Probability Chart - FIXED RECHARTS ERROR by enforcing height and checking data */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">{t.vizProb}</h4>
+                <div style={{ width: '100%', height: 300 }}>
+                    {chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <XAxis type="number" domain={[0, 100]} hide />
+                                <YAxis 
+                                    dataKey="name" 
+                                    type="category" 
+                                    width={140} 
+                                    tick={{fontSize: 12, fontWeight: 500, fill: '#64748b'}} 
+                                />
+                                <Tooltip 
+                                    cursor={{fill: '#f8fafc'}}
+                                    content={({ active, payload }) => {
+                                        if (active && payload && payload.length) {
+                                        const data = payload[0].payload;
+                                        return (
+                                            <div className="bg-slate-800 text-white p-3 rounded-xl shadow-xl border border-slate-700 text-xs">
+                                            <p className="font-bold mb-1 text-sm">{data.full}</p>
+                                            <p className="text-slate-300">Probability: {data.prob}%</p>
+                                            </div>
+                                        );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                                <Bar dataKey="prob" radius={[0, 6, 6, 0]} barSize={32} background={{ fill: '#f1f5f9', radius: [0, 6, 6, 0] }}>
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={getConfidenceColor(entry.confidence)} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+                            No chart data available
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Differential Cards - ENHANCED UI for "Quality Info" */}
             <div>
                 <h3 className="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2">
                     <BrainCircuit className="w-6 h-6 text-indigo-600" />
@@ -88,68 +132,71 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset, t }
                 </h3>
                 
                 <div className="space-y-6">
-                    {data.differential.map((diff, idx) => (
-                        <div key={idx} className="group bg-white rounded-2xl p-0 shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
+                    {(data.differential || []).map((diff, idx) => (
+                        <div key={idx} className="group bg-white rounded-3xl p-0 shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden transition-all hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1">
                             {/* Card Header */}
-                            <div className="p-6 border-b border-slate-50 flex justify-between items-start bg-gradient-to-r from-white to-slate-50/50">
+                            <div className="p-6 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gradient-to-r from-white via-slate-50/30 to-slate-50/80 gap-4">
                                 <div>
-                                    <h4 className="text-xl font-bold text-slate-800 mb-1">{diff.diagnosis}</h4>
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {diff.evidence.map((ev, i) => (
-                                            <span key={i} className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md border border-indigo-100/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shadow-md shadow-indigo-500/30">
+                                            {idx + 1}
+                                        </div>
+                                        <h4 className="text-xl font-bold text-slate-900">{diff.diagnosis}</h4>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mt-3 ml-11">
+                                        {(diff.evidence || []).map((ev, i) => (
+                                            <span key={i} className="text-[11px] font-bold bg-white text-slate-600 px-3 py-1 rounded-full border border-slate-200 shadow-sm">
                                                 {ev}
                                             </span>
                                         ))}
                                     </div>
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <div className="text-3xl font-black text-slate-900 leading-none">{Math.round(diff.probability * 100)}%</div>
-                                    <span className="text-xs text-slate-400 font-bold uppercase mt-1">{t.prob}</span>
+                                <div className="flex items-center gap-3 ml-11 sm:ml-0 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t.prob}</span>
+                                        <div className="text-2xl font-black text-slate-800 leading-none">{Math.round((diff.probability || 0) * 100)}%</div>
+                                    </div>
+                                    <div className="h-8 w-8 rounded-full border-4 border-slate-100 flex items-center justify-center" style={{ borderColor: getConfidenceColor(diff.confidence) + '30' }}>
+                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getConfidenceColor(diff.confidence) }}></div>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Mechanism & Why */}
-                            <div className="p-6 grid md:grid-cols-2 gap-6 bg-white">
-                                <div>
-                                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                        <Lightbulb className="w-3 h-3" /> {t.mech}
+                            {/* Detailed Content - Schema Style */}
+                            <div className="p-6 grid md:grid-cols-12 gap-6 bg-white relative">
+                                
+                                {/* Vertical connecting line visually */}
+                                <div className="hidden md:block absolute left-1/2 top-6 bottom-6 w-px bg-slate-100 -translate-x-1/2"></div>
+
+                                {/* Mechanism (Pathogenesis) */}
+                                <div className="md:col-span-6 flex flex-col h-full">
+                                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                        <GitMerge className="w-4 h-4 text-indigo-500" /> 
+                                        {t.mech}
                                     </h5>
-                                    <p className="text-sm text-slate-600 leading-relaxed italic border-l-2 border-amber-300 pl-3">
-                                        "{diff.mechanism || diff.why}"
-                                    </p>
+                                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex-grow relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-indigo-400"></div>
+                                        <p className="text-sm text-slate-700 leading-relaxed font-medium font-mono text-justify">
+                                            {diff.mechanism || "No mechanism data provided."}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t.rationale}</h5>
-                                     <p className="text-sm text-slate-600 leading-relaxed">
-                                        {diff.why}
-                                     </p>
+
+                                {/* Clinical Reasoning */}
+                                <div className="md:col-span-6 flex flex-col h-full">
+                                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                        <Lightbulb className="w-4 h-4 text-amber-500" />
+                                        {t.rationale}
+                                     </h5>
+                                     <div className="bg-amber-50/50 rounded-xl p-4 border border-amber-100 flex-grow">
+                                        <p className="text-sm text-slate-700 leading-relaxed">
+                                            {diff.why || "No reasoning provided."}
+                                        </p>
+                                     </div>
                                 </div>
                             </div>
                         </div>
                     ))}
-                </div>
-            </div>
-
-            {/* Probability Chart */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">{t.vizProb}</h4>
-                <div className="h-48 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
-                            <XAxis type="number" domain={[0, 100]} hide />
-                            <YAxis dataKey="name" type="category" width={150} tick={{fontSize: 12, fontWeight: 500, fill: '#64748b'}} />
-                            <Tooltip 
-                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', background: '#1e293b', color: '#fff' }}
-                                itemStyle={{ color: '#fff' }}
-                                cursor={{fill: '#f8fafc'}}
-                            />
-                            <Bar dataKey="prob" radius={[0, 6, 6, 0]} barSize={24}>
-                                {chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={getConfidenceColor(entry.confidence)} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
                 </div>
             </div>
 
@@ -159,17 +206,18 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset, t }
         <div className="space-y-6">
             
             {/* Red Flags Widget */}
-            {data.red_flags.length > 0 && (
-                <div className="bg-red-50 rounded-2xl p-5 border border-red-100 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4 text-red-800 font-bold">
-                        <AlertTriangle className="w-5 h-5" />
+            {data.red_flags && data.red_flags.length > 0 && (
+                <div className="bg-white rounded-3xl p-6 border border-red-100 shadow-lg shadow-red-500/5 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+                    <div className="flex items-center gap-2 mb-5 text-red-900 font-bold">
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
                         <h3>{t.redFlags}</h3>
                     </div>
                     <ul className="space-y-3">
                         {data.red_flags.map((flag, idx) => (
-                            <li key={idx} className="bg-white p-3 rounded-xl border border-red-100 text-sm text-red-800 font-medium shadow-sm flex gap-3">
-                                <div className="min-w-[4px] bg-red-500 rounded-full"></div>
-                                {flag}
+                            <li key={idx} className="bg-red-50 p-3 rounded-xl border border-red-100 text-sm text-red-800 font-semibold shadow-sm flex items-start gap-3">
+                                <ShieldAlert className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                <span className="leading-tight">{flag}</span>
                             </li>
                         ))}
                     </ul>
@@ -177,38 +225,38 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset, t }
             )}
 
             {/* Recommended Tests */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                 <div className="flex items-center gap-2 mb-4 text-slate-800 font-bold">
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+                 <div className="flex items-center gap-2 mb-5 text-slate-800 font-bold">
                     <TestTube className="w-5 h-5 text-purple-600" />
                     <h3>{t.tests}</h3>
                 </div>
                 <div className="space-y-3">
-                    {data.recommended_tests.map((test, idx) => (
-                        <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                             <div className="flex justify-between items-center mb-1">
-                                <span className="font-bold text-slate-700 text-sm">{test.test}</span>
+                    {(data.recommended_tests || []).map((test, idx) => (
+                        <div key={idx} className="group bg-slate-50 hover:bg-white p-4 rounded-2xl border border-slate-100 hover:border-purple-200 hover:shadow-md transition-all">
+                             <div className="flex justify-between items-start mb-2">
+                                <span className="font-bold text-slate-800 text-sm">{test.test}</span>
                                 <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                                     test.priority === 'high' ? 'bg-red-100 text-red-600' : 'bg-slate-200 text-slate-600'
                                 }`}>
                                     {test.priority === 'high' ? t.important : t.plan}
                                 </span>
                              </div>
-                             <p className="text-xs text-slate-500 leading-tight">{test.rationale}</p>
+                             <p className="text-xs text-slate-500 leading-snug">{test.rationale}</p>
                         </div>
                     ))}
                 </div>
             </div>
 
             {/* Immediate Actions */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-100 shadow-sm">
-                 <div className="flex items-center gap-2 mb-4 text-emerald-900 font-bold">
+            <div className="bg-gradient-to-b from-emerald-50 to-white rounded-3xl p-6 border border-emerald-100 shadow-sm">
+                 <div className="flex items-center gap-2 mb-5 text-emerald-900 font-bold">
                     <CheckCircle className="w-5 h-5 text-emerald-600" />
                     <h3>{t.actions}</h3>
                 </div>
                 <ul className="space-y-2">
-                    {data.immediate_actions.map((action, idx) => (
-                        <li key={idx} className="flex gap-2 text-sm text-emerald-900 bg-white/60 p-2 rounded-lg">
-                            <span className="text-emerald-500 font-bold">•</span>
+                    {(data.immediate_actions || []).map((action, idx) => (
+                        <li key={idx} className="flex gap-3 text-sm text-slate-700 bg-white p-3 rounded-xl border border-emerald-50 shadow-sm">
+                            <div className="min-w-[6px] h-[6px] rounded-full bg-emerald-500 mt-1.5"></div>
                             {action}
                         </li>
                     ))}
@@ -216,14 +264,14 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset, t }
             </div>
 
             {/* Questions */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                 <div className="flex items-center gap-2 mb-4 text-slate-800 font-bold">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                 <div className="flex items-center gap-2 mb-5 text-slate-800 font-bold">
                     <HelpCircle className="w-5 h-5 text-blue-500" />
                     <h3>{t.questions}</h3>
                 </div>
-                <ul className="space-y-2">
-                    {data.clarifying_questions.map((q, idx) => (
-                        <li key={idx} className="text-sm text-slate-600 italic border-l-2 border-blue-200 pl-3 py-1">
+                <ul className="space-y-3">
+                    {(data.clarifying_questions || []).map((q, idx) => (
+                        <li key={idx} className="text-sm text-slate-600 italic bg-slate-50 px-4 py-3 rounded-xl border-l-4 border-blue-300">
                             "{q}"
                         </li>
                     ))}
@@ -244,7 +292,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset, t }
                 <p className="text-sm leading-relaxed mb-6 text-slate-300 border-l-2 border-slate-600 pl-4">
                     {data.explanatory_note}
                 </p>
-                {data.references.length > 0 && (
+                {data.references && data.references.length > 0 && (
                     <div className="text-xs text-slate-500 bg-slate-800/50 p-4 rounded-xl">
                         <span className="font-bold text-slate-400 uppercase block mb-1">{t.sources}: </span>
                         {data.references.map((ref, i) => (

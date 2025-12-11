@@ -20,7 +20,10 @@ function App() {
     const savedHistory = localStorage.getItem('cds_patient_history');
     if (savedHistory) {
       try {
-        setHistory(JSON.parse(savedHistory));
+        const parsed = JSON.parse(savedHistory);
+        if (Array.isArray(parsed)) {
+            setHistory(parsed);
+        }
       } catch (e) {
         console.error("Failed to parse history", e);
       }
@@ -230,13 +233,13 @@ function App() {
                      {/* Card Stats */}
                      <div className="p-6 pt-4 flex-grow flex flex-col justify-end">
                         <div className="flex flex-wrap gap-2 mb-4">
-                           {item.red_flags.length > 0 && (
+                           {(item.red_flags || []).length > 0 && (
                                <span className="text-[10px] font-bold bg-red-50 text-red-600 px-2 py-1 rounded border border-red-100">
-                                   🔴 {item.red_flags.length} {lang === 'ru' ? 'Флага' : 'Flags'}
+                                   🔴 {(item.red_flags || []).length} {lang === 'ru' ? 'Флага' : 'Flags'}
                                </span>
                            )}
                            <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">
-                               🔎 {item.differential.length} {lang === 'ru' ? 'Гипотез' : 'Hypotheses'}
+                               🔎 {(item.differential || []).length} {lang === 'ru' ? 'Гипотез' : 'Hypotheses'}
                            </span>
                         </div>
 

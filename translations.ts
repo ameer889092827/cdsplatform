@@ -57,6 +57,7 @@ export const translations = {
     important: "Важно",
     plan: "План",
     flagDetected: "Обнаружены красные флаги",
+    error: "Не удалось сгенерировать анализ.",
     startWork: "Начать работу",
     disclaimer: "Medical Disclaimer: This AI tool is for educational and supportive purposes only. It is not a medical device and does not replace professional clinical judgment.",
     developedBy: "Developed by Rahmatulla Daud"
@@ -119,6 +120,7 @@ export const translations = {
     important: "Urgent",
     plan: "Plan",
     flagDetected: "Red flags detected",
+    error: "Failed to generate analysis.",
     startWork: "Start Working",
     disclaimer: "Medical Disclaimer: This AI tool is for educational and supportive purposes only. It is not a medical device and does not replace professional clinical judgment.",
     developedBy: "Developed by Rahmatulla Daud"
