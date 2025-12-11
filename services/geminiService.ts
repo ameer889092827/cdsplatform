@@ -21,7 +21,7 @@ Format strictly JSON.
 `;
 
 export const analyzePatientData = async (data: PatientInput, language: Language): Promise<DiagnosticResponse> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: "AIzaSyAzPgLW8V0nLxAQLDZqTMYhF7ZPHBsvif0" });
 
   const prompt = `
   ${SYSTEM_PROMPT}
