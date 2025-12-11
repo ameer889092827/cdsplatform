@@ -5,9 +5,10 @@ import { PatientInput } from '../types';
 interface InputFormProps {
   onSubmit: (data: PatientInput) => void;
   isLoading: boolean;
+  t: any;
 }
 
-export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
+export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading, t }) => {
   const [formData, setFormData] = useState<PatientInput>({
     patient_id: `PT-${Math.floor(Math.random() * 10000)}`,
     age: '',
@@ -66,21 +67,21 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           <div className={sectionClass}>
             <div className={headerClass}>
               <User className="w-5 h-5 text-blue-600" />
-              <span>Пациент</span>
+              <span>{t.patient}</span>
             </div>
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>Возраст</label>
+                <label className={labelClass}>{t.age}</label>
                 <input
                   type="number"
-                  placeholder="Лет"
+                  placeholder={t.years}
                   className={inputClass}
                   value={formData.age}
                   onChange={(e) => setFormData({...formData, age: e.target.value})}
                 />
               </div>
               <div>
-                <label className={labelClass}>Пол</label>
+                <label className={labelClass}>{t.gender}</label>
                 <div className="flex bg-slate-100 p-1 rounded-xl">
                   {['male', 'female'].map((g) => (
                     <button
@@ -92,7 +93,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
                         : 'text-slate-500 hover:text-slate-700'
                       }`}
                     >
-                      {g === 'male' ? 'Муж' : 'Жен'}
+                      {g === 'male' ? t.male : t.female}
                     </button>
                   ))}
                 </div>
@@ -103,19 +104,19 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           <div className={sectionClass}>
             <div className={headerClass}>
               <Activity className="w-5 h-5 text-emerald-500" />
-              <span>Витальные</span>
+              <span>{t.vitals}</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelClass}>АД</label>
+                <label className={labelClass}>{t.bp}</label>
                 <input name="bp" placeholder="120/80" className={inputClass} onChange={handleVitalChange} />
               </div>
               <div>
-                <label className={labelClass}>ЧСС</label>
-                <input name="hr" placeholder="уд/мин" className={inputClass} onChange={handleVitalChange} />
+                <label className={labelClass}>{t.hr}</label>
+                <input name="hr" placeholder="bpm" className={inputClass} onChange={handleVitalChange} />
               </div>
               <div>
-                <label className={labelClass}>Темп</label>
+                <label className={labelClass}>{t.temp}</label>
                 <input name="temp" placeholder="°C" className={inputClass} onChange={handleVitalChange} />
               </div>
               <div>
@@ -128,12 +129,12 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
            <div className={sectionClass}>
             <div className={headerClass}>
                <Pill className="w-5 h-5 text-purple-500" />
-               <span>Препараты</span>
+               <span>{t.meds}</span>
             </div>
              <div className="flex gap-2 mb-3">
                 <input 
                   className={inputClass} 
-                  placeholder="Название..."
+                  placeholder={t.medPlaceholder}
                   value={newMed}
                   onChange={(e) => setNewMed(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addMed()}
@@ -160,7 +161,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           <div className={sectionClass}>
             <div className={headerClass}>
               <AlignLeft className="w-5 h-5 text-indigo-500" />
-              <span>Жалобы и Симптомы</span>
+              <span>{t.symptoms}</span>
             </div>
             <div className="space-y-3">
               {formData.symptoms.map((symptom, idx) => (
@@ -168,7 +169,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
                   <input
                     value={symptom}
                     onChange={(e) => handleSymptomChange(idx, e.target.value)}
-                    placeholder="Введите симптом (напр. Одышка при нагрузке)..."
+                    placeholder={t.symPlaceholder}
                     className={inputClass}
                     autoFocus={idx === formData.symptoms.length - 1 && idx > 0}
                   />
@@ -183,7 +184,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
                 </div>
               ))}
               <button onClick={addSymptom} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-bold mt-2 px-1">
-                <Plus className="w-4 h-4" /> Добавить жалобу
+                <Plus className="w-4 h-4" /> {t.addSymptom}
               </button>
             </div>
           </div>
@@ -191,17 +192,17 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           <div className={sectionClass}>
             <div className={headerClass}>
               <Microscope className="w-5 h-5 text-amber-500" />
-              <span>Лабораторные данные (Текст)</span>
+              <span>{t.labs}</span>
             </div>
             <div className="relative">
                 <textarea
                 className={`${inputClass} h-32 resize-none font-mono text-xs leading-relaxed`}
-                placeholder={`Вставьте сюда текст анализов. Пример:\nГемоглобин 90 г/л\nЛейкоциты 15\nФерритин снижен\nТТГ 4.5`}
+                placeholder={t.labsPlaceholder}
                 value={formData.lab_text}
                 onChange={(e) => setFormData({...formData, lab_text: e.target.value})}
                 />
                 <div className="absolute bottom-3 right-3 text-[10px] text-slate-400 font-medium bg-white px-2 rounded">
-                    ИИ распознает любой формат
+                    {t.aiNote}
                 </div>
             </div>
           </div>
@@ -209,11 +210,11 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           <div className={sectionClass}>
             <div className={headerClass}>
               <FileText className="w-5 h-5 text-slate-500" />
-              <span>Анамнез и Заметки</span>
+              <span>{t.history}</span>
             </div>
             <textarea
               className={`${inputClass} h-24 resize-none`}
-              placeholder="История развития болезни, аллергии, наследственность, диета..."
+              placeholder={t.histPlaceholder}
               value={formData.history_notes}
               onChange={(e) => setFormData({...formData, history_notes: e.target.value})}
             />
@@ -232,7 +233,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           `}
         >
             <span className="relative z-10 flex items-center gap-2">
-                {isLoading ? 'Идет анализ...' : 'Запустить Диагностику'}
+                {isLoading ? t.analyzing : t.run}
                 {!isLoading && <Activity className="w-5 h-5" />}
             </span>
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />

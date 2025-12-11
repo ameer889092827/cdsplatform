@@ -1,23 +1,23 @@
 import { GoogleGenAI } from "@google/genai";
-import { PatientInput, DiagnosticResponse } from "../types";
+import { PatientInput, DiagnosticResponse, Language } from "../types";
 
 const SYSTEM_PROMPT = `
 SYSTEM:
-Вы — элитный медицинский ИИ-консультант (Clinical Decision Support). Ваша цель — глубокий клинический синтез.
-Входные данные могут содержать анализы в свободном текстовом формате (копипаст) — ты должен их корректно интерпретировать.
+You are an elite AI Medical Consultant (Clinical Decision Support). Your goal is deep clinical synthesis.
+Input data includes unstructured lab text—you must interpret it correctly.
 
-Твоя задача сгенерировать ДИАГНОСТИЧЕСКУЮ КАРТУ. Для каждого диагноза ты должен объяснить не только "почему это подходит", но и "МЕХАНИЗМ" (патофизиология: как именно симптомы и анализы ведут к этому состоянию).
+Your task is to generate a DIAGNOSTIC MAP. For each diagnosis, you must explain not just "why it fits", but the "MECHANISM" (pathophysiology: how exactly the symptoms and labs lead to this condition).
 
-Структура анализа:
-1. **Differential**: Список гипотез. Поле 'mechanism' должно объяснять причинно-следственную связь (causality).
-2. **Recommended Tests**: Только то, что реально изменит тактику.
-3. **Red Flags**: Критические состояния.
-4. **Summary**: Краткая выжимка ситуации врача.
+Analysis Structure:
+1. **Differential**: List of hypotheses. 'mechanism' field must explain causality.
+2. **Recommended Tests**: Only what will actually change tactics.
+3. **Red Flags**: Critical conditions.
+4. **Summary**: A concise summary for the doctor.
 
-Формат строго JSON.
+Format strictly JSON.
 `;
 
-export const analyzePatientData = async (data: PatientInput): Promise<DiagnosticResponse> => {
+export const analyzePatientData = async (data: PatientInput, language: Language): Promise<DiagnosticResponse> => {
   const apiKey = "AIzaSyDSWXsMSqzh-aSsrcx-PAhQbPbx964Vmms";
   const ai = new GoogleGenAI({ apiKey });
 
@@ -25,7 +25,11 @@ export const analyzePatientData = async (data: PatientInput): Promise<Diagnostic
   ${SYSTEM_PROMPT}
 
   USER:
-  Проанализируй этого пациента. Лабораторные данные переданы текстом — извлеки из них смысл.
+  Analyze this patient. Lab data is passed as text—extract meaning from it.
+  
+  LANGUAGE REQUIREMENT:
+  Output the entire response in ${language === 'ru' ? 'RUSSIAN' : 'ENGLISH'}.
+  Translate all clinical terms, summaries, and explanations to ${language === 'ru' ? 'Russian' : 'English'}.
   
   INPUT DATA:
   ${JSON.stringify(data, null, 2)}
@@ -42,7 +46,7 @@ export const analyzePatientData = async (data: PatientInput): Promise<Diagnostic
           properties: {
             patient_id: { type: "STRING" as any },
             timestamp: { type: "STRING" as any },
-            summary_ru: { type: "STRING" as any },
+            summary: { type: "STRING" as any },
             differential: {
               type: "ARRAY" as any,
               items: {
@@ -75,7 +79,7 @@ export const analyzePatientData = async (data: PatientInput): Promise<Diagnostic
             references: { type: "ARRAY" as any, items: { type: "STRING" as any } },
             overall_confidence: { type: "STRING" as any, enum: ["low", "medium", "high"] }
           },
-          required: ["patient_id", "differential", "recommended_tests", "red_flags", "overall_confidence"]
+          required: ["patient_id", "differential", "recommended_tests", "red_flags", "overall_confidence", "summary"]
         }
       }
     });

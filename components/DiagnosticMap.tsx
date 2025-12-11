@@ -6,9 +6,10 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 interface DiagnosticMapProps {
   data: DiagnosticResponse;
   onReset: () => void;
+  t: any;
 }
 
-export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) => {
+export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset, t }) => {
   const chartData = data.differential.map(d => ({
     name: d.diagnosis.length > 20 ? d.diagnosis.substring(0, 20) + '...' : d.diagnosis,
     full: d.diagnosis,
@@ -25,6 +26,15 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
     }
   };
 
+  const getConfidenceText = (conf: string) => {
+      switch (conf) {
+          case 'high': return t.high;
+          case 'medium': return t.medium;
+          case 'low': return t.low;
+          default: return conf;
+      }
+  }
+
   return (
     <div className="max-w-7xl mx-auto pb-12 animate-fade-in space-y-8">
       
@@ -33,23 +43,23 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
                 <div className="flex items-center gap-3">
-                    <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Клинический Отчет</h2>
+                    <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t.reportTitle}</h2>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${
                         data.overall_confidence === 'high' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                         data.overall_confidence === 'medium' ? 'bg-blue-50 text-blue-700 border-blue-100' :
                         'bg-amber-50 text-amber-700 border-amber-100'
                     }`}>
-                        Точность: {data.overall_confidence === 'high' ? 'Высокая' : data.overall_confidence === 'medium' ? 'Средняя' : 'Низкая'}
+                        {t.accuracy}: {getConfidenceText(data.overall_confidence)}
                     </span>
                 </div>
-                <p className="text-slate-400 text-sm mt-1 font-medium">ID Пациента: {data.patient_id} • {new Date().toLocaleDateString()}</p>
+                <p className="text-slate-400 text-sm mt-1 font-medium">{t.patientID}: {data.patient_id} • {new Date().toLocaleDateString()}</p>
             </div>
             
             {/* Red Flags Alert Badge */}
             {data.red_flags.length > 0 && (
                 <div className="flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-xl border border-red-100 animate-pulse">
                     <ShieldAlert className="w-5 h-5" />
-                    <span className="font-bold text-sm">Обнаружены красные флаги ({data.red_flags.length})</span>
+                    <span className="font-bold text-sm">{t.flagDetected} ({data.red_flags.length})</span>
                 </div>
             )}
         </div>
@@ -57,10 +67,10 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
         <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                <Activity className="w-4 h-4" /> Резюме
+                <Activity className="w-4 h-4" /> {t.summary}
             </h3>
             <p className="text-slate-800 text-lg leading-relaxed font-medium">
-                {data.summary_ru}
+                {data.summary}
             </p>
         </div>
       </div>
@@ -74,7 +84,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
             <div>
                 <h3 className="text-xl font-bold text-slate-800 mb-5 flex items-center gap-2">
                     <BrainCircuit className="w-6 h-6 text-indigo-600" />
-                    Дифференциальный диагноз и Механизмы
+                    {t.diffDiag}
                 </h3>
                 
                 <div className="space-y-6">
@@ -94,7 +104,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
                                 </div>
                                 <div className="flex flex-col items-end">
                                     <div className="text-3xl font-black text-slate-900 leading-none">{Math.round(diff.probability * 100)}%</div>
-                                    <span className="text-xs text-slate-400 font-bold uppercase mt-1">Вероятность</span>
+                                    <span className="text-xs text-slate-400 font-bold uppercase mt-1">{t.prob}</span>
                                 </div>
                             </div>
 
@@ -102,14 +112,14 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
                             <div className="p-6 grid md:grid-cols-2 gap-6 bg-white">
                                 <div>
                                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                        <Lightbulb className="w-3 h-3" /> Патогенез (Механизм)
+                                        <Lightbulb className="w-3 h-3" /> {t.mech}
                                     </h5>
                                     <p className="text-sm text-slate-600 leading-relaxed italic border-l-2 border-amber-300 pl-3">
                                         "{diff.mechanism || diff.why}"
                                     </p>
                                 </div>
                                 <div>
-                                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Клиническое обоснование</h5>
+                                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t.rationale}</h5>
                                      <p className="text-sm text-slate-600 leading-relaxed">
                                         {diff.why}
                                      </p>
@@ -122,7 +132,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
 
             {/* Probability Chart */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Визуализация вероятностей</h4>
+                <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">{t.vizProb}</h4>
                 <div className="h-48 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
@@ -153,7 +163,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
                 <div className="bg-red-50 rounded-2xl p-5 border border-red-100 shadow-sm">
                     <div className="flex items-center gap-2 mb-4 text-red-800 font-bold">
                         <AlertTriangle className="w-5 h-5" />
-                        <h3>КРАСНЫЕ ФЛАГИ</h3>
+                        <h3>{t.redFlags}</h3>
                     </div>
                     <ul className="space-y-3">
                         {data.red_flags.map((flag, idx) => (
@@ -170,7 +180,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
             <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                  <div className="flex items-center gap-2 mb-4 text-slate-800 font-bold">
                     <TestTube className="w-5 h-5 text-purple-600" />
-                    <h3>Что проверить дальше?</h3>
+                    <h3>{t.tests}</h3>
                 </div>
                 <div className="space-y-3">
                     {data.recommended_tests.map((test, idx) => (
@@ -180,7 +190,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
                                 <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                                     test.priority === 'high' ? 'bg-red-100 text-red-600' : 'bg-slate-200 text-slate-600'
                                 }`}>
-                                    {test.priority === 'high' ? 'Важно' : 'План'}
+                                    {test.priority === 'high' ? t.important : t.plan}
                                 </span>
                              </div>
                              <p className="text-xs text-slate-500 leading-tight">{test.rationale}</p>
@@ -193,7 +203,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-100 shadow-sm">
                  <div className="flex items-center gap-2 mb-4 text-emerald-900 font-bold">
                     <CheckCircle className="w-5 h-5 text-emerald-600" />
-                    <h3>План действий</h3>
+                    <h3>{t.actions}</h3>
                 </div>
                 <ul className="space-y-2">
                     {data.immediate_actions.map((action, idx) => (
@@ -209,7 +219,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                  <div className="flex items-center gap-2 mb-4 text-slate-800 font-bold">
                     <HelpCircle className="w-5 h-5 text-blue-500" />
-                    <h3>Спросить пациента</h3>
+                    <h3>{t.questions}</h3>
                 </div>
                 <ul className="space-y-2">
                     {data.clarifying_questions.map((q, idx) => (
@@ -230,13 +240,13 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
                 <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-                <h4 className="font-bold text-white mb-2 text-lg">Врачебное заключение ИИ</h4>
+                <h4 className="font-bold text-white mb-2 text-lg">{t.conclusion}</h4>
                 <p className="text-sm leading-relaxed mb-6 text-slate-300 border-l-2 border-slate-600 pl-4">
                     {data.explanatory_note}
                 </p>
                 {data.references.length > 0 && (
                     <div className="text-xs text-slate-500 bg-slate-800/50 p-4 rounded-xl">
-                        <span className="font-bold text-slate-400 uppercase block mb-1">Релевантные источники: </span>
+                        <span className="font-bold text-slate-400 uppercase block mb-1">{t.sources}: </span>
                         {data.references.map((ref, i) => (
                             <span key={i} className="mr-3 hover:text-white transition-colors cursor-default underline decoration-slate-700 underline-offset-2">
                                 {ref}
@@ -253,7 +263,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ data, onReset }) =
             onClick={onReset}
             className="group flex items-center gap-3 px-8 py-3 bg-white border border-slate-200 hover:border-blue-300 text-slate-700 font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
         >
-            Загрузить новый случай <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-blue-500" />
+            {t.reset} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-blue-500" />
         </button>
       </div>
 

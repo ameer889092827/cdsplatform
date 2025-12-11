@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, History as HistoryIcon, Clock, ChevronRight, Trash2, Calendar, LayoutGrid } from 'lucide-react';
+import { Stethoscope, History as HistoryIcon, Clock, ChevronRight, Trash2, Calendar, LayoutGrid, Globe } from 'lucide-react';
 import { InputForm } from './components/InputForm';
 import { DiagnosticMap } from './components/DiagnosticMap';
 import { analyzePatientData } from './services/geminiService';
-import { PatientInput, DiagnosticResponse } from './types';
+import { PatientInput, DiagnosticResponse, Language } from './types';
+import { translations } from './translations';
 
 function App() {
   const [view, setView] = useState<'form' | 'loading' | 'report' | 'history'>('form');
   const [reportData, setReportData] = useState<DiagnosticResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<DiagnosticResponse[]>([]);
+  const [lang, setLang] = useState<Language>('ru');
+
+  const t = translations[lang];
 
   // Load history from local storage on mount
   useEffect(() => {
@@ -37,7 +41,7 @@ function App() {
   };
 
   const clearHistory = () => {
-    if (window.confirm('Вы уверены, что хотите удалить всю историю пациентов?')) {
+    if (window.confirm(t.deleteConfirm)) {
       setHistory([]);
       localStorage.removeItem('cds_patient_history');
     }
@@ -47,13 +51,13 @@ function App() {
     setView('loading');
     setError(null);
     try {
-      const result = await analyzePatientData(data);
+      const result = await analyzePatientData(data, lang);
       setReportData(result);
       setView('report');
       saveToHistory(result);
     } catch (err) {
       console.error(err);
-      setError("Не удалось сгенерировать анализ. Пожалуйста, проверьте API ключ и попробуйте снова.");
+      setError(translations[lang].error || "Failed to generate analysis.");
       setView('form');
     }
   };
@@ -68,6 +72,10 @@ function App() {
     setView('form');
   };
 
+  const toggleLang = () => {
+      setLang(prev => prev === 'ru' ? 'en' : 'ru');
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 flex flex-col">
       
@@ -79,12 +87,20 @@ function App() {
               <Stethoscope className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-none">CDS Platform</h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Rahmatulla Daud • Medical AI</p>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-none">{t.title}</h1>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{t.subtitle}</p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
+             <button
+                onClick={toggleLang}
+                className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs flex items-center gap-1 transition-all mr-2"
+             >
+                 <Globe className="w-4 h-4" />
+                 {lang.toUpperCase()}
+             </button>
+
              <button 
                onClick={() => setView('history')}
                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
@@ -94,7 +110,7 @@ function App() {
                }`}
              >
                <HistoryIcon className="w-4 h-4" />
-               <span className="hidden sm:inline">База Пациентов</span>
+               <span className="hidden sm:inline">{t.patientDB}</span>
              </button>
              
              {view !== 'form' && (
@@ -103,7 +119,7 @@ function App() {
                   className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center gap-2"
                 >
                   <LayoutGrid className="w-4 h-4" />
-                  Новый случай
+                  {t.newCase}
                 </button>
              )}
           </div>
@@ -116,11 +132,11 @@ function App() {
         {view === 'form' && (
           <div className="animate-fade-in">
              <div className="text-center mb-12 max-w-3xl mx-auto">
-                <h2 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Клинический Анализ</h2>
+                <h2 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">{t.introTitle}</h2>
                 <p className="text-lg text-slate-500 leading-relaxed">
-                  Используйте ИИ для построения диагностических карт, оценки рисков и поиска причинно-следственных связей. 
+                  {t.introText}
                   <span className="block mt-2 text-sm font-semibold text-blue-600 bg-blue-50 inline-block px-3 py-1 rounded-full">
-                    Поддерживает ввод анализов сплошным текстом
+                    {t.supportText}
                   </span>
                 </p>
              </div>
@@ -129,7 +145,7 @@ function App() {
                  {error}
                </div>
              )}
-             <InputForm onSubmit={handleAnalyze} isLoading={false} />
+             <InputForm onSubmit={handleAnalyze} isLoading={false} t={t} />
           </div>
         )}
 
@@ -141,13 +157,13 @@ function App() {
                 <Stethoscope className="w-8 h-8 text-blue-600" />
               </div>
             </div>
-            <h3 className="mt-8 text-2xl font-bold text-slate-900">Синтез данных...</h3>
-            <p className="text-slate-500 mt-2 font-medium">Построение цепочек патогенеза и дифференциальная диагностика</p>
+            <h3 className="mt-8 text-2xl font-bold text-slate-900">{t.loadingTitle}</h3>
+            <p className="text-slate-500 mt-2 font-medium">{t.loadingText}</p>
           </div>
         )}
 
         {view === 'report' && reportData && (
-          <DiagnosticMap data={reportData} onReset={reset} />
+          <DiagnosticMap data={reportData} onReset={reset} t={t} />
         )}
 
         {view === 'history' && (
@@ -156,9 +172,9 @@ function App() {
                <div>
                   <h2 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
                     <HistoryIcon className="w-8 h-8 text-blue-600" />
-                    Архив Пациентов
+                    {t.historyTitle}
                   </h2>
-                  <p className="text-slate-500 mt-1 ml-11">Все сохраненные диагностические сессии</p>
+                  <p className="text-slate-500 mt-1 ml-11">{t.historySubtitle}</p>
                </div>
                
                {history.length > 0 && (
@@ -166,7 +182,7 @@ function App() {
                    onClick={clearHistory}
                    className="text-slate-400 hover:text-red-600 text-sm font-semibold flex items-center gap-2 px-4 py-2 hover:bg-red-50 rounded-lg transition-all"
                  >
-                   <Trash2 className="w-4 h-4" /> Удалить все
+                   <Trash2 className="w-4 h-4" /> {t.delete}
                  </button>
                )}
              </div>
@@ -176,12 +192,12 @@ function App() {
                  <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
                    <Clock className="w-10 h-10 text-slate-300" />
                  </div>
-                 <h3 className="text-xl font-bold text-slate-900">История пуста</h3>
+                 <h3 className="text-xl font-bold text-slate-900">{t.emptyHistory}</h3>
                  <p className="text-slate-500 mt-2 max-w-sm mx-auto mb-8">
-                   Здесь будут отображаться карточки пациентов с полным диагностическим разбором.
+                   {t.emptyHistoryText}
                  </p>
                  <button onClick={reset} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all">
-                   Начать работу
+                   {t.startWork}
                  </button>
                </div>
              ) : (
@@ -204,7 +220,10 @@ function App() {
                             </div>
                         </div>
                         <p className="text-slate-900 font-bold leading-snug line-clamp-2 min-h-[2.5rem]">
-                            {item.summary_ru.length > 90 ? item.summary_ru.substring(0, 90) + '...' : item.summary_ru}
+                            {/* Handling both old summary_ru and new summary fields for backward compatibility */}
+                            {(item.summary || (item as any).summary_ru || '').length > 90 
+                                ? (item.summary || (item as any).summary_ru || '').substring(0, 90) + '...' 
+                                : (item.summary || (item as any).summary_ru)}
                         </p>
                      </div>
 
@@ -213,11 +232,11 @@ function App() {
                         <div className="flex flex-wrap gap-2 mb-4">
                            {item.red_flags.length > 0 && (
                                <span className="text-[10px] font-bold bg-red-50 text-red-600 px-2 py-1 rounded border border-red-100">
-                                   🔴 {item.red_flags.length} Флага
+                                   🔴 {item.red_flags.length} {lang === 'ru' ? 'Флага' : 'Flags'}
                                </span>
                            )}
                            <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">
-                               🔎 {item.differential.length} Гипотез
+                               🔎 {item.differential.length} {lang === 'ru' ? 'Гипотез' : 'Hypotheses'}
                            </span>
                         </div>
 
@@ -229,7 +248,7 @@ function App() {
                                     'bg-amber-500'
                                 }`}></span>
                                 <span className="text-xs font-bold text-slate-500 uppercase">
-                                    {item.overall_confidence === 'high' ? 'Высокая' : 'Средняя'} точность
+                                    {item.overall_confidence === 'high' ? t.high : t.medium} {t.accuracy}
                                 </span>
                              </div>
                              
@@ -259,11 +278,10 @@ function App() {
       <footer className="border-t border-slate-200 bg-white mt-auto py-10">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-sm font-semibold text-slate-400 mb-2 max-w-2xl mx-auto leading-relaxed">
-            Medical Disclaimer: This AI tool is for educational and supportive purposes only. 
-            It is not a medical device and does not replace professional clinical judgment.
+            {t.disclaimer}
           </p>
           <div className="mt-6 flex flex-col items-center gap-1">
-             <p className="font-bold text-slate-700">Developed by Rahmatulla Daud</p>
+             <p className="font-bold text-slate-700">{t.developedBy}</p>
              <p className="text-xs text-slate-400 tracking-wider uppercase">Advanced Clinical Decision Systems © {new Date().getFullYear()}</p>
           </div>
         </div>

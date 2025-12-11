@@ -1,3 +1,5 @@
+export type Language = 'ru' | 'en';
+
 export interface PatientInput {
   patient_id: string;
   age: string;
@@ -39,7 +41,7 @@ export interface RecommendedTest {
 export interface DiagnosticResponse {
   patient_id: string;
   timestamp: string;
-  summary_ru: string;
+  summary: string; // Renamed from summary_ru for bilingual support
   differential: DifferentialDiagnosis[];
   recommended_tests: RecommendedTest[];
   immediate_actions: string[];
