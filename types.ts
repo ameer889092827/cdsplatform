@@ -1,13 +1,6 @@
-export interface LabResult {
-  name: string;
-  value: string;
-  unit?: string;
-  numeric?: number;
-}
-
 export interface PatientInput {
   patient_id: string;
-  age: string; // collected as string for input ease, parsed later if needed
+  age: string;
   gender: 'male' | 'female' | 'other';
   symptoms: string[];
   vitals: {
@@ -17,7 +10,7 @@ export interface PatientInput {
     spo2?: string;
     rr?: string;
   };
-  labs: LabResult[];
+  lab_text: string; // Changed from array object to simple string block
   meds: string[];
   habits: {
     smoking?: boolean;
@@ -33,6 +26,7 @@ export interface DifferentialDiagnosis {
   probability: number;
   confidence: 'low' | 'medium' | 'high';
   evidence: string[];
+  mechanism: string; // Added to explain "Why it happens"
   why: string;
 }
 

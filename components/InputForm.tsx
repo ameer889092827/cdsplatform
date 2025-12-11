@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, X, Activity, TestTube, FileText, User } from 'lucide-react';
-import { PatientInput, LabResult } from '../types';
+import { Plus, X, Activity, FileText, User, Microscope, Pill, AlignLeft } from 'lucide-react';
+import { PatientInput } from '../types';
 
 interface InputFormProps {
   onSubmit: (data: PatientInput) => void;
@@ -14,13 +14,12 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
     gender: 'male',
     symptoms: [''],
     vitals: { bp: '', hr: '', temp: '', spo2: '' },
-    labs: [],
+    lab_text: '',
     meds: [],
     habits: { diet: '', other: '' },
     history_notes: ''
   });
 
-  const [newLab, setNewLab] = useState<LabResult>({ name: '', value: '', unit: '' });
   const [newMed, setNewMed] = useState('');
 
   const handleVitalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,17 +38,6 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
     setFormData({ ...formData, symptoms: newSymptoms });
   };
 
-  const addLab = () => {
-    if (newLab.name && newLab.value) {
-      setFormData({ ...formData, labs: [...formData.labs, newLab] });
-      setNewLab({ name: '', value: '', unit: '' });
-    }
-  };
-
-  const removeLab = (index: number) => {
-    setFormData({ ...formData, labs: formData.labs.filter((_, i) => i !== index) });
-  };
-
   const addMed = () => {
     if (newMed) {
       setFormData({ ...formData, meds: [...formData.meds, newMed] });
@@ -61,143 +49,102 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
     setFormData({ ...formData, meds: formData.meds.filter((_, i) => i !== index) });
   };
 
-  const inputClass = "flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent outline-none transition-all";
-  const labelClass = "block text-sm font-semibold text-slate-600 mb-2";
+  // Styles
+  const sectionClass = "bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 mb-6 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]";
+  const headerClass = "flex items-center gap-2 mb-4 text-slate-800 font-bold text-lg border-b border-slate-50 pb-2";
+  const inputClass = "w-full p-3 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-700 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white outline-none transition-all placeholder:text-slate-400";
+  const labelClass = "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1";
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
-        <User className="w-6 h-6 text-blue-600" />
-        <h2 className="text-xl font-bold text-slate-800">Данные пациента</h2>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Basic Info & Vitals */}
-        <div className="space-y-6">
-          <div>
-            <label className={labelClass}>Демография</label>
-            <div className="flex gap-4">
-              <input
-                type="number"
-                placeholder="Возраст"
-                className={inputClass}
-                value={formData.age}
-                onChange={(e) => setFormData({...formData, age: e.target.value})}
-              />
-              <select
-                className={inputClass}
-                value={formData.gender}
-                onChange={(e) => setFormData({...formData, gender: e.target.value as any})}
-              >
-                <option value="male">Мужской</option>
-                <option value="female">Женский</option>
-                <option value="other">Другое</option>
-              </select>
+    <div className="max-w-5xl mx-auto pb-12">
+      
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        {/* Left Column: Demographics & Vitals & Meds */}
+        <div className="md:col-span-4 space-y-6">
+          
+          <div className={sectionClass}>
+            <div className={headerClass}>
+              <User className="w-5 h-5 text-blue-600" />
+              <span>Пациент</span>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className={labelClass}>Возраст</label>
+                <input
+                  type="number"
+                  placeholder="Лет"
+                  className={inputClass}
+                  value={formData.age}
+                  onChange={(e) => setFormData({...formData, age: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Пол</label>
+                <div className="flex bg-slate-100 p-1 rounded-xl">
+                  {['male', 'female'].map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setFormData({...formData, gender: g as any})}
+                      className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                        formData.gender === g 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      {g === 'male' ? 'Муж' : 'Жен'}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Activity className="w-4 h-4 text-blue-500" />
-              <label className="text-sm font-semibold text-slate-600">Витальные показатели</label>
+          <div className={sectionClass}>
+            <div className={headerClass}>
+              <Activity className="w-5 h-5 text-emerald-500" />
+              <span>Витальные</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <input name="bp" placeholder="АД (120/80)" className={inputClass} onChange={handleVitalChange} />
-              <input name="hr" placeholder="ЧСС (уд/мин)" className={inputClass} onChange={handleVitalChange} />
-              <input name="temp" placeholder="Темп (°C)" className={inputClass} onChange={handleVitalChange} />
-              <input name="spo2" placeholder="SpO2 (%)" className={inputClass} onChange={handleVitalChange} />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-4 h-4 text-blue-500" />
-              <label className="text-sm font-semibold text-slate-600">Симптомы</label>
-            </div>
-            <div className="space-y-2">
-              {formData.symptoms.map((symptom, idx) => (
-                <div key={idx} className="flex gap-2">
-                  <input
-                    value={symptom}
-                    onChange={(e) => handleSymptomChange(idx, e.target.value)}
-                    placeholder="напр., Боль в груди, усталость"
-                    className={inputClass}
-                  />
-                  {formData.symptoms.length > 1 && (
-                    <button onClick={() => removeSymptom(idx)} className="text-slate-400 hover:text-red-500 transition-colors">
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button onClick={addSymptom} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium mt-1">
-                <Plus className="w-3 h-3" /> Добавить симптом
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Labs & History */}
-        <div className="space-y-6">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <TestTube className="w-4 h-4 text-blue-500" />
-              <label className="text-sm font-semibold text-slate-600">Лабораторные анализы</label>
-            </div>
-            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-3">
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                <input
-                  placeholder="Название"
-                  className="col-span-1 p-2 text-sm border border-slate-200 rounded bg-white text-slate-700"
-                  value={newLab.name}
-                  onChange={(e) => setNewLab({...newLab, name: e.target.value})}
-                />
-                <input
-                  placeholder="Значение"
-                  className="col-span-1 p-2 text-sm border border-slate-200 rounded bg-white text-slate-700"
-                  value={newLab.value}
-                  onChange={(e) => setNewLab({...newLab, value: e.target.value})}
-                />
-                 <input
-                  placeholder="Ед.изм"
-                  className="col-span-1 p-2 text-sm border border-slate-200 rounded bg-white text-slate-700"
-                  value={newLab.unit}
-                  onChange={(e) => setNewLab({...newLab, unit: e.target.value})}
-                />
+              <div>
+                <label className={labelClass}>АД</label>
+                <input name="bp" placeholder="120/80" className={inputClass} onChange={handleVitalChange} />
               </div>
-              <button onClick={addLab} className="w-full py-1.5 bg-white border border-slate-300 text-slate-600 text-xs font-semibold rounded hover:bg-slate-100 transition-colors">
-                Добавить анализ
-              </button>
-            </div>
-            {formData.labs.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {formData.labs.map((lab, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
-                    {lab.name}: {lab.value} {lab.unit}
-                    <button onClick={() => removeLab(idx)} className="hover:text-blue-900 ml-1"><X className="w-3 h-3" /></button>
-                  </span>
-                ))}
+              <div>
+                <label className={labelClass}>ЧСС</label>
+                <input name="hr" placeholder="уд/мин" className={inputClass} onChange={handleVitalChange} />
               </div>
-            )}
+              <div>
+                <label className={labelClass}>Темп</label>
+                <input name="temp" placeholder="°C" className={inputClass} onChange={handleVitalChange} />
+              </div>
+              <div>
+                <label className={labelClass}>SpO2</label>
+                <input name="spo2" placeholder="%" className={inputClass} onChange={handleVitalChange} />
+              </div>
+            </div>
           </div>
 
-          <div>
-             <label className={labelClass}>Лекарства и препараты</label>
+           <div className={sectionClass}>
+            <div className={headerClass}>
+               <Pill className="w-5 h-5 text-purple-500" />
+               <span>Препараты</span>
+            </div>
              <div className="flex gap-2 mb-3">
                 <input 
                   className={inputClass} 
-                  placeholder="Добавить лекарство..."
+                  placeholder="Название..."
                   value={newMed}
                   onChange={(e) => setNewMed(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addMed()}
                 />
-                <button onClick={addMed} className="px-3 py-2 bg-slate-100 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors">
-                  <Plus className="w-4 h-4" />
+                <button onClick={addMed} className="px-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors">
+                  <Plus className="w-5 h-5" />
                 </button>
              </div>
              <div className="flex flex-wrap gap-2">
                 {formData.meds.map((med, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded-full border border-purple-100">
+                  <span key={idx} className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-lg border border-purple-100">
                     {med}
                     <button onClick={() => removeMed(idx)} className="hover:text-purple-900 ml-1"><X className="w-3 h-3" /></button>
                   </span>
@@ -205,29 +152,93 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
              </div>
           </div>
 
-          <div>
-            <label className={labelClass}>Анамнез, диета и заметки</label>
+        </div>
+
+        {/* Right Column: Symptoms, History, Labs */}
+        <div className="md:col-span-8 space-y-6">
+          
+          <div className={sectionClass}>
+            <div className={headerClass}>
+              <AlignLeft className="w-5 h-5 text-indigo-500" />
+              <span>Жалобы и Симптомы</span>
+            </div>
+            <div className="space-y-3">
+              {formData.symptoms.map((symptom, idx) => (
+                <div key={idx} className="flex gap-2 relative group">
+                  <input
+                    value={symptom}
+                    onChange={(e) => handleSymptomChange(idx, e.target.value)}
+                    placeholder="Введите симптом (напр. Одышка при нагрузке)..."
+                    className={inputClass}
+                    autoFocus={idx === formData.symptoms.length - 1 && idx > 0}
+                  />
+                  {formData.symptoms.length > 1 && (
+                    <button 
+                        onClick={() => removeSymptom(idx)} 
+                        className="absolute right-3 top-3 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button onClick={addSymptom} className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-bold mt-2 px-1">
+                <Plus className="w-4 h-4" /> Добавить жалобу
+              </button>
+            </div>
+          </div>
+
+          <div className={sectionClass}>
+            <div className={headerClass}>
+              <Microscope className="w-5 h-5 text-amber-500" />
+              <span>Лабораторные данные (Текст)</span>
+            </div>
+            <div className="relative">
+                <textarea
+                className={`${inputClass} h-32 resize-none font-mono text-xs leading-relaxed`}
+                placeholder={`Вставьте сюда текст анализов. Пример:\nГемоглобин 90 г/л\nЛейкоциты 15\nФерритин снижен\nТТГ 4.5`}
+                value={formData.lab_text}
+                onChange={(e) => setFormData({...formData, lab_text: e.target.value})}
+                />
+                <div className="absolute bottom-3 right-3 text-[10px] text-slate-400 font-medium bg-white px-2 rounded">
+                    ИИ распознает любой формат
+                </div>
+            </div>
+          </div>
+
+          <div className={sectionClass}>
+            <div className={headerClass}>
+              <FileText className="w-5 h-5 text-slate-500" />
+              <span>Анамнез и Заметки</span>
+            </div>
             <textarea
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg h-24 text-sm text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none resize-none transition-all"
-              placeholder="Введите историю болезни, особенности питания или другие наблюдения..."
+              className={`${inputClass} h-24 resize-none`}
+              placeholder="История развития болезни, аллергии, наследственность, диета..."
               value={formData.history_notes}
               onChange={(e) => setFormData({...formData, history_notes: e.target.value})}
             />
           </div>
+
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="flex justify-center pt-4">
         <button
           onClick={() => onSubmit(formData)}
           disabled={isLoading}
-          className={`px-8 py-3 rounded-lg font-semibold text-white transition-all shadow-md ${
-            isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg active:transform active:scale-95'
-          }`}
+          className={`
+            relative overflow-hidden group px-10 py-4 rounded-2xl font-bold text-white text-lg shadow-xl shadow-blue-500/30 transition-all 
+            ${isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-[1.02] hover:shadow-blue-500/40'}
+          `}
         >
-          {isLoading ? 'Анализ...' : 'Сгенерировать карту'}
+            <span className="relative z-10 flex items-center gap-2">
+                {isLoading ? 'Идет анализ...' : 'Запустить Диагностику'}
+                {!isLoading && <Activity className="w-5 h-5" />}
+            </span>
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
         </button>
       </div>
+
     </div>
   );
 };

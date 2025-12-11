@@ -1,15 +1,23 @@
-import { GoogleGenAI, Schema } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { PatientInput, DiagnosticResponse } from "../types";
 
 const SYSTEM_PROMPT = `
 SYSTEM:
-Вы — клинический ассистент (Clinical Decision Support Agent). Ваша задача — по заданным входным данным пациента (симптомы, витальные показатели, результаты лабораторий, лекарства, привычки, анамнез) сгенерировать структурированную диагностическую карту: 1) список возможных диагнозов (differential) с оценкой вероятности и коротким обоснованием; 2) рекомендуемые дополнительные тесты с приоритетом и мотивацией; 3) немедленные действия / red flags; 4) уточняющие вопросы для врача; 5) краткая «пояснительная заметка» (2–4 предложения) о механизме/периферийных факторах; 6) ссылки на релевантные руководства или статьи, если доступны. Всегда включайте уровень уверенности (low/medium/high) и процентное приближение (например 0.25). Никогда не выдавайте окончательный диагноз как факт — давайте гипотезы. Если информация неполная, укажите, какие данные критичны и почему. Всегда заверяйте, что окончательное решение за врачом.
-Ограничения: не предлагать экспериментальные, неподтверждённые или опасные процедуры; если нужна срочная помощь — чётко укажите «ЭКСТРЕННО: вызвать неотложную помощь». Строго соблюдайте врачебную этику и приватность.
-Формат ответа — строго JSON.
+Вы — элитный медицинский ИИ-консультант (Clinical Decision Support). Ваша цель — глубокий клинический синтез.
+Входные данные могут содержать анализы в свободном текстовом формате (копипаст) — ты должен их корректно интерпретировать.
+
+Твоя задача сгенерировать ДИАГНОСТИЧЕСКУЮ КАРТУ. Для каждого диагноза ты должен объяснить не только "почему это подходит", но и "МЕХАНИЗМ" (патофизиология: как именно симптомы и анализы ведут к этому состоянию).
+
+Структура анализа:
+1. **Differential**: Список гипотез. Поле 'mechanism' должно объяснять причинно-следственную связь (causality).
+2. **Recommended Tests**: Только то, что реально изменит тактику.
+3. **Red Flags**: Критические состояния.
+4. **Summary**: Краткая выжимка ситуации врача.
+
+Формат строго JSON.
 `;
 
 export const analyzePatientData = async (data: PatientInput): Promise<DiagnosticResponse> => {
-  // Using the specific API key as requested
   const apiKey = "AIzaSyDSWXsMSqzh-aSsrcx-PAhQbPbx964Vmms";
   const ai = new GoogleGenAI({ apiKey });
 
@@ -17,8 +25,8 @@ export const analyzePatientData = async (data: PatientInput): Promise<Diagnostic
   ${SYSTEM_PROMPT}
 
   USER:
-  Вот входные данные пациента в виде JSON. Проанализируй и верни ответ JSON, заполненный по схеме. Добавь краткую человеческую сводку (summary_ru) не более 3 предложений.
-
+  Проанализируй этого пациента. Лабораторные данные переданы текстом — извлеки из них смысл.
+  
   INPUT DATA:
   ${JSON.stringify(data, null, 2)}
   `;
@@ -29,7 +37,6 @@ export const analyzePatientData = async (data: PatientInput): Promise<Diagnostic
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        // forcing a schema to ensure type safety
         responseSchema: {
           type: "OBJECT" as any,
           properties: {
@@ -45,6 +52,7 @@ export const analyzePatientData = async (data: PatientInput): Promise<Diagnostic
                   probability: { type: "NUMBER" as any },
                   confidence: { type: "STRING" as any, enum: ["low", "medium", "high"] },
                   evidence: { type: "ARRAY" as any, items: { type: "STRING" as any } },
+                  mechanism: { type: "STRING" as any, description: "Pathophysiological explanation of why this is happening" },
                   why: { type: "STRING" as any }
                 }
               }
